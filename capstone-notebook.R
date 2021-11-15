@@ -1,7 +1,3 @@
-## ----setup, include=FALSE-------------------------------------------------------------------------------------------------
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = '/Users/ynahshon/Developer/Projects/Case_study_1-Bike_Share/12_months/csv/')
-
 
 ## ----library setup, message=FALSE-----------------------------------------------------------------------------------------
 library(tidyverse)
