@@ -138,7 +138,7 @@ Based on the business task - **How do annual members and casual riders use Cycli
 
 ### My top 3 recommendations:
 
-1.  Campaign on discount membership for longer rides during the weekends (Observations 1, 2 and 3).
+1.  Marketing campaign on discount membership for longer rides during the weekends (Observations 1, 2 and 3).
 
 2.  Add more bikes and promotions at the casual users top stations (Observation 9).
 
