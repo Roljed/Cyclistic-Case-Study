@@ -1,10 +1,15 @@
+## ----setup, include=FALSE-------------------------------------------------------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = '/Users/ynahshon/Developer/Projects/Case_study_1-Bike_Share/Cyclistic-Case-Study/data/')
+
 
 ## ----library setup, message=FALSE-----------------------------------------------------------------------------------------
-library(tidyverse)
-library(lubridate)
-library(ggplot2)
-library(gridExtra)
-library(scales)
+library("tidyverse")
+library("lubridate")
+library("ggplot2")
+library("ggmap")
+library("gridExtra")
+library("scales")
 
 
 ## ----reading csv files, message=FALSE, results='hide'---------------------------------------------------------------------
@@ -74,6 +79,13 @@ f1_2020_11 <- mutate(f1_2020_11, start_station_id = as.character(start_station_i
 all_trips <- bind_rows(f1_2020_11, f2_2020_12, f3_2021_01, f4_2021_02, f5_2021_03, f6_2021_04, f7_2021_05, f8_2021_06, f9_2021_07, f10_2021_08, f11_2021_09, f12_2021_10)
 
 
+## ----combined table inspection--------------------------------------------------------------------------------------------
+glimpse(all_trips)
+str(all_trips)
+
+summary(all_trips)
+
+
 ## -------------------------------------------------------------------------------------------------------------------------
 colnames(all_trips)
 dim(all_trips)
@@ -84,11 +96,7 @@ summary(all_trips)
 
 ## ----inspec nan values----------------------------------------------------------------------------------------------------
 colSums(is.na(all_trips))
-
-
-## ----clean-up column removal----------------------------------------------------------------------------------------------
-all_trips_v2 <- all_trips %>%
-  select(-c(start_lat, start_lng, end_lat, end_lng))
+all_trips_v2 <- all_trips
 
 
 ## ----adding date columns--------------------------------------------------------------------------------------------------
@@ -177,7 +185,7 @@ avg_user_ride_time <- ggplot(ride_length_stats, mapping = aes(x = user_type, y =
   geom_col(show.legend = FALSE) +
   labs(title = "User Ride Time",
        subtitle = 'Average time in minutes',
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x = "User",
        y = "Time")
 
@@ -185,7 +193,7 @@ median_user_ride_time <- ggplot(ride_length_stats, mapping = aes(x = user_type, 
   geom_col(show.legend = FALSE) +
   labs(title = "User Ride Time",
        subtitle = 'Median time in minutes',
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x = "User",
        y = "Time")
 
@@ -207,7 +215,7 @@ ggplot(weekdays_rides, aes(x = weekday, y = number_of_rides, fill = user_type)) 
   geom_col(show.legend = FALSE, position = "dodge") +
   facet_wrap(~user_type) +
   labs(title="Number of rides by rider type",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Weekdays",
        y="Number of Rides") +
   scale_y_continuous(labels = comma)
@@ -218,7 +226,7 @@ ggplot(weekdays_rides, aes(x = weekday, y = average_duration / 60, fill = user_t
   facet_wrap(~user_type) +
   geom_col(show.legend = FALSE, position = "dodge") +
   labs(title="Average duration",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Weekdays",
        y="Number of Rides")
 
@@ -265,7 +273,7 @@ ggplot(daytime_hours, aes(x = hour, y = number_of_rides, fill = user_type)) +
   facet_wrap(~user_type) +
   geom_col(show.legend = FALSE, position = "dodge") +
   labs(title="Daytime hour preference",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Hour",
        y="Number of Rides") +
   coord_flip() +
@@ -277,7 +285,7 @@ ggplot(daytime_hours, aes(x = hour, y = average_duration / 60, fill = user_type)
   facet_wrap(~user_type) +
   geom_col(show.legend = FALSE, position = "dodge") +
   labs(title="Daytime hour preference",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Hour",
        y="Average Duration") +
   coord_flip() +
@@ -295,7 +303,7 @@ ggplot(bike_type, aes(x = rideable_type, y = number_of_rides, fill = user_type))
   facet_wrap(~user_type) +
   geom_col(show.legend = FALSE, position = "dodge") +
   labs(title="Bike type preference",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Bike type",
        y="Number of Rides") +
   scale_y_continuous(labels = comma)
@@ -306,7 +314,7 @@ ggplot(bike_type, aes(x = rideable_type, y = average_duration / 60, fill = user_
   facet_wrap(~user_type) +
   geom_col(show.legend = FALSE, position = "dodge") +
   labs(title="Bike type preference",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Bike type",
        y="Average Duration")
 
@@ -341,6 +349,7 @@ ggplot(popular_end_stations[1:10,], aes(x = end_station_name, y = number_of_ride
        x="Stations",
        y="Number of Rides") +
   scale_y_continuous(labels = comma) +
+  theme_minimal() +
   theme(axis.text.x = element_text(angle = 50,hjust = 1))
 
 
@@ -357,7 +366,155 @@ ggplot(top_popular_station[1:20,], aes(x = start_station_name, y = number_of_rid
        caption = "Data Source by Motivate Internatiol INC.",
        x="Stations",
        y="Number of Rides") +
+  theme_minimal() +
   scale_y_continuous(labels = comma) +
   theme(axis.text.x = element_text(angle = 50,hjust = 1))
 
+
+## -------------------------------------------------------------------------------------------------------------------------
+# Table with route counter for finding the top routs
+coordinates_table <- all_trips_v4 %>%
+  filter(start_lng != end_lng & start_lat != end_lat) %>%
+  group_by(start_lng, start_lat, end_lng, end_lat, user_type, rideable_type, hour) %>%
+  summarise(total = n(), .groups="drop")
+
+
+## ----quantile for picking top values--------------------------------------------------------------------------------------
+quantile(coordinates_table$total, probs = c(.5, .75, .9, .95, .99, .995, .999,1))
+
+
+## ----map - top 5 percent, echo=FALSE--------------------------------------------------------------------------------------
+coordinates_table_v1 <- all_trips_v4 %>%
+  filter(start_lng != end_lng & start_lat != end_lat) %>%
+  group_by(start_lng, start_lat, end_lng, end_lat, user_type, rideable_type, hour) %>%
+  summarise(total = n(), .groups="drop") %>%
+  filter(total >= 6)
+
+casual_v1 <- coordinates_table_v1 %>%
+  filter(user_type == "casual")
+member_v1 <- coordinates_table_v1 %>% 
+  filter(user_type == "member")
+
+# Bounding box coordinates for ggmap:
+chi_bb <- c(
+  left = -87.700424,
+  bottom = 41.790769,
+  right = -87.554855,
+  top = 41.990119
+)
+
+# Stamen map of Chicago
+chicago_map <- get_stamenmap(
+  bbox = chi_bb,
+  zoom = 12,
+  maptype = "toner",
+  messaging = FALSE,
+  color = "color"
+)
+
+
+## ----plotting maps of 5 percent-------------------------------------------------------------------------------------------
+# Casual users map
+ggmap(chicago_map, darken = c(0.8, "white")) +
+   geom_curve(casual_v1, 
+              mapping = aes(x = start_lng, 
+                            y = start_lat, 
+                            xend = end_lng, 
+                            yend = end_lat, 
+                            alpha = total, 
+                            color = hour), 
+              size = 0.5,
+              curvature = .2,
+              arrow = arrow(length=unit(0.2,"cm"), 
+                            ends="first", 
+                            type = "closed")) +
+    coord_cartesian() +
+    labs(title = "Top 5% Popular Routes By Casual Users",
+         x=NULL,
+         y=NULL, 
+         alpha = "Frequency",
+         color = "Ride Hour", 
+         caption = "Data by Motivate International Inc")
+
+# Members users map
+ggmap(chicago_map, darken = c(0.8, "white")) +
+    geom_curve(member_v1, 
+               mapping = aes(x = start_lng, 
+                             y = start_lat, 
+                             xend = end_lng, 
+                             yend = end_lat, 
+                             alpha= total, 
+                             color=hour), 
+               size = 0.5, 
+               curvature = .2,
+               arrow = arrow(length=unit(0.2,"cm"), 
+                             ends="first", 
+                             type = "closed")) +  
+    coord_cartesian() +
+    labs(title = "Top 5% Popular Routes By Annual Members",
+         x=NULL,
+         y=NULL,
+         alpha = "Frequency",
+         color = "Ride Hour",
+         caption = "Data by Motivate International Inc")
+
+
+
+## ----map - top 0.1 percent------------------------------------------------------------------------------------------------
+coordinates_table_v2 <- all_trips_v4 %>%
+  filter(start_lng != end_lng & start_lat != end_lat) %>%
+  group_by(start_lng, start_lat, end_lng, end_lat, user_type, rideable_type, hour) %>%
+  summarise(total = n(), .groups="drop") %>%
+  filter(total >= 44)
+
+casual_v2 <- coordinates_table_v2 %>%
+  filter(user_type == "casual")
+member_v2 <- coordinates_table_v2 %>% 
+  filter(user_type == "member")
+
+
+## ----plotting maps of 0.1 percent-----------------------------------------------------------------------------------------
+# Casual users map
+ggmap(chicago_map, darken = c(0.8, "white")) +
+   geom_curve(casual_v2, 
+              mapping = aes(x = start_lng, 
+                            y = start_lat, 
+                            xend = end_lng, 
+                            yend = end_lat, 
+                            alpha = total, 
+                            color = hour), 
+              size = 0.5,
+              curvature = .2,
+              arrow = arrow(length=unit(0.2,"cm"), 
+                            ends="first", 
+                            type = "closed")) +
+    coord_cartesian() +
+    labs(title = "Top 0.1% Popular Routes By Casual Users",
+         x = NULL,
+         y = NULL, 
+         alpha = "Frequency",
+         color = "Ride Hour", 
+         caption = "Data by Motivate International Inc")
+
+# Members users map
+ggmap(chicago_map, darken = c(0.8, "white")) +
+    geom_curve(member_v2, 
+               mapping = aes(x = start_lng, 
+                             y = start_lat, 
+                             xend = end_lng, 
+                             yend = end_lat, 
+                             alpha = total, 
+                             color = hour), 
+               size = 0.5, 
+               curvature = .2,
+               arrow = arrow(length=unit(0.2,"cm"), 
+                             ends="first", 
+                             type = "closed")) +  
+    coord_cartesian() +
+    labs(title = "Top 0.1% Popular Routes By Annual Members",
+         x=NULL,
+         y=NULL,
+         alpha = "Frequency",
+         color = "Ride Hour",
+         caption = "Data by Motivate International Inc")
 
