@@ -43,11 +43,12 @@ How do annual members and casual riders use Cyclistic bikes differently?
 ### Libraries setup
 
 ``` r
-library(tidyverse)
-library(lubridate)
-library(ggplot2)
-library(gridExtra)
-library(scales)
+library("tidyverse")
+library("lubridate")
+library("ggplot2")
+library("ggmap")
+library("gridExtra")
+library("scales")
 ```
 
 ### Data import
@@ -124,6 +125,101 @@ Stack individual month’s data frames into one big data frame
 ``` r
 all_trips <- bind_rows(f1_2020_11, f2_2020_12, f3_2021_01, f4_2021_02, f5_2021_03, f6_2021_04, f7_2021_05, f8_2021_06, f9_2021_07, f10_2021_08, f11_2021_09, f12_2021_10)
 ```
+
+Inspect the combined table
+
+``` r
+glimpse(all_trips)
+```
+
+    ## Rows: 5,378,834
+    ## Columns: 13
+    ## $ ride_id            <chr> "BD0A6FF6FFF9B921", "96A7A7A4BDE4F82D", "C61526D065…
+    ## $ rideable_type      <chr> "electric_bike", "electric_bike", "electric_bike", …
+    ## $ started_at         <dttm> 2020-11-01 13:36:00, 2020-11-01 10:03:26, 2020-11-…
+    ## $ ended_at           <dttm> 2020-11-01 13:45:40, 2020-11-01 10:14:45, 2020-11-…
+    ## $ start_station_name <chr> "Dearborn St & Erie St", "Franklin St & Illinois St…
+    ## $ start_station_id   <chr> "110", "672", "76", "659", "2", "72", "76", NA, "58…
+    ## $ end_station_name   <chr> "St. Clair St & Erie St", "Noble St & Milwaukee Ave…
+    ## $ end_station_id     <chr> "211", "29", "41", "185", "2", "76", "72", NA, "288…
+    ## $ start_lat          <dbl> 41.89418, 41.89096, 41.88098, 41.89550, 41.87650, 4…
+    ## $ start_lng          <dbl> -87.62913, -87.63534, -87.61675, -87.68201, -87.620…
+    ## $ end_lat            <dbl> 41.89443, 41.90067, 41.87205, 41.91774, 41.87645, 4…
+    ## $ end_lng            <dbl> -87.62338, -87.66248, -87.62955, -87.69139, -87.620…
+    ## $ member_casual      <chr> "casual", "casual", "casual", "casual", "casual", "…
+
+``` r
+str(all_trips)
+```
+
+    ## spec_tbl_df [5,378,834 × 13] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
+    ##  $ ride_id           : chr [1:5378834] "BD0A6FF6FFF9B921" "96A7A7A4BDE4F82D" "C61526D06582BDC5" "E533E89C32080B9E" ...
+    ##  $ rideable_type     : chr [1:5378834] "electric_bike" "electric_bike" "electric_bike" "electric_bike" ...
+    ##  $ started_at        : POSIXct[1:5378834], format: "2020-11-01 13:36:00" "2020-11-01 10:03:26" ...
+    ##  $ ended_at          : POSIXct[1:5378834], format: "2020-11-01 13:45:40" "2020-11-01 10:14:45" ...
+    ##  $ start_station_name: chr [1:5378834] "Dearborn St & Erie St" "Franklin St & Illinois St" "Lake Shore Dr & Monroe St" "Leavitt St & Chicago Ave" ...
+    ##  $ start_station_id  : chr [1:5378834] "110" "672" "76" "659" ...
+    ##  $ end_station_name  : chr [1:5378834] "St. Clair St & Erie St" "Noble St & Milwaukee Ave" "Federal St & Polk St" "Stave St & Armitage Ave" ...
+    ##  $ end_station_id    : chr [1:5378834] "211" "29" "41" "185" ...
+    ##  $ start_lat         : num [1:5378834] 41.9 41.9 41.9 41.9 41.9 ...
+    ##  $ start_lng         : num [1:5378834] -87.6 -87.6 -87.6 -87.7 -87.6 ...
+    ##  $ end_lat           : num [1:5378834] 41.9 41.9 41.9 41.9 41.9 ...
+    ##  $ end_lng           : num [1:5378834] -87.6 -87.7 -87.6 -87.7 -87.6 ...
+    ##  $ member_casual     : chr [1:5378834] "casual" "casual" "casual" "casual" ...
+    ##  - attr(*, "spec")=
+    ##   .. cols(
+    ##   ..   ride_id = col_character(),
+    ##   ..   rideable_type = col_character(),
+    ##   ..   started_at = col_datetime(format = ""),
+    ##   ..   ended_at = col_datetime(format = ""),
+    ##   ..   start_station_name = col_character(),
+    ##   ..   start_station_id = col_double(),
+    ##   ..   end_station_name = col_character(),
+    ##   ..   end_station_id = col_double(),
+    ##   ..   start_lat = col_double(),
+    ##   ..   start_lng = col_double(),
+    ##   ..   end_lat = col_double(),
+    ##   ..   end_lng = col_double(),
+    ##   ..   member_casual = col_character()
+    ##   .. )
+    ##  - attr(*, "problems")=<externalptr>
+
+``` r
+summary(all_trips)
+```
+
+    ##    ride_id          rideable_type        started_at                 
+    ##  Length:5378834     Length:5378834     Min.   :2020-11-01 00:00:08  
+    ##  Class :character   Class :character   1st Qu.:2021-05-17 12:45:18  
+    ##  Mode  :character   Mode  :character   Median :2021-07-13 22:33:14  
+    ##                                        Mean   :2021-06-27 18:37:41  
+    ##                                        3rd Qu.:2021-09-02 18:18:14  
+    ##                                        Max.   :2021-10-31 23:59:49  
+    ##                                                                     
+    ##     ended_at                   start_station_name start_station_id  
+    ##  Min.   :2020-11-01 00:02:20   Length:5378834     Length:5378834    
+    ##  1st Qu.:2021-05-17 13:07:36   Class :character   Class :character  
+    ##  Median :2021-07-13 22:57:23   Mode  :character   Mode  :character  
+    ##  Mean   :2021-06-27 18:58:10                                        
+    ##  3rd Qu.:2021-09-02 18:35:16                                        
+    ##  Max.   :2021-11-03 21:45:48                                        
+    ##                                                                     
+    ##  end_station_name   end_station_id       start_lat       start_lng     
+    ##  Length:5378834     Length:5378834     Min.   :41.64   Min.   :-87.84  
+    ##  Class :character   Class :character   1st Qu.:41.88   1st Qu.:-87.66  
+    ##  Mode  :character   Mode  :character   Median :41.90   Median :-87.64  
+    ##                                        Mean   :41.90   Mean   :-87.65  
+    ##                                        3rd Qu.:41.93   3rd Qu.:-87.63  
+    ##                                        Max.   :42.08   Max.   :-87.52  
+    ##                                                                        
+    ##     end_lat         end_lng       member_casual     
+    ##  Min.   :41.51   Min.   :-88.07   Length:5378834    
+    ##  1st Qu.:41.88   1st Qu.:-87.66   Class :character  
+    ##  Median :41.90   Median :-87.64   Mode  :character  
+    ##  Mean   :41.90   Mean   :-87.65                     
+    ##  3rd Qu.:41.93   3rd Qu.:-87.63                     
+    ##  Max.   :42.17   Max.   :-87.44                     
+    ##  NA's   :4831    NA's   :4831
 
 ------------------------------------------------------------------------
 
@@ -262,13 +358,8 @@ colSums(is.na(all_trips))
     ##      member_casual 
     ##                  0
 
-### Remove bad data
-
-Remove lat, long, birthyear
-
 ``` r
-all_trips_v2 <- all_trips %>%
-  select(-c(start_lat, start_lng, end_lat, end_lng))
+all_trips_v2 <- all_trips
 ```
 
 ### Adding date formats
@@ -298,7 +389,7 @@ all_trips_v2$ride_length <- difftime(all_trips_v2$ended_at,all_trips_v2$started_
 str(all_trips_v2)
 ```
 
-    ## tibble [5,378,834 × 16] (S3: tbl_df/tbl/data.frame)
+    ## spec_tbl_df [5,378,834 × 20] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
     ##  $ ride_id           : chr [1:5378834] "BD0A6FF6FFF9B921" "96A7A7A4BDE4F82D" "C61526D06582BDC5" "E533E89C32080B9E" ...
     ##  $ rideable_type     : chr [1:5378834] "electric_bike" "electric_bike" "electric_bike" "electric_bike" ...
     ##  $ started_at        : POSIXct[1:5378834], format: "2020-11-01 13:36:00" "2020-11-01 10:03:26" ...
@@ -307,6 +398,10 @@ str(all_trips_v2)
     ##  $ start_station_id  : chr [1:5378834] "110" "672" "76" "659" ...
     ##  $ end_station_name  : chr [1:5378834] "St. Clair St & Erie St" "Noble St & Milwaukee Ave" "Federal St & Polk St" "Stave St & Armitage Ave" ...
     ##  $ end_station_id    : chr [1:5378834] "211" "29" "41" "185" ...
+    ##  $ start_lat         : num [1:5378834] 41.9 41.9 41.9 41.9 41.9 ...
+    ##  $ start_lng         : num [1:5378834] -87.6 -87.6 -87.6 -87.7 -87.6 ...
+    ##  $ end_lat           : num [1:5378834] 41.9 41.9 41.9 41.9 41.9 ...
+    ##  $ end_lng           : num [1:5378834] -87.6 -87.7 -87.6 -87.7 -87.6 ...
     ##  $ member_casual     : chr [1:5378834] "casual" "casual" "casual" "casual" ...
     ##  $ date              : Date[1:5378834], format: "2020-11-01" "2020-11-01" ...
     ##  $ month             : chr [1:5378834] "11" "11" "11" "11" ...
@@ -316,6 +411,23 @@ str(all_trips_v2)
     ##  $ hour              : chr [1:5378834] "13" "10" "00" "00" ...
     ##  $ ride_length       : 'difftime' num [1:5378834] 580 679 1741 555 ...
     ##   ..- attr(*, "units")= chr "secs"
+    ##  - attr(*, "spec")=
+    ##   .. cols(
+    ##   ..   ride_id = col_character(),
+    ##   ..   rideable_type = col_character(),
+    ##   ..   started_at = col_datetime(format = ""),
+    ##   ..   ended_at = col_datetime(format = ""),
+    ##   ..   start_station_name = col_character(),
+    ##   ..   start_station_id = col_double(),
+    ##   ..   end_station_name = col_character(),
+    ##   ..   end_station_id = col_double(),
+    ##   ..   start_lat = col_double(),
+    ##   ..   start_lng = col_double(),
+    ##   ..   end_lat = col_double(),
+    ##   ..   end_lng = col_double(),
+    ##   ..   member_casual = col_character()
+    ##   .. )
+    ##  - attr(*, "problems")=<externalptr>
 
 Convert “ride_length” from Factor to numeric so we can run calculations
 on the data
@@ -325,6 +437,8 @@ is.factor(all_trips_v2$ride_length)
 all_trips_v2$ride_length <- as.numeric(as.character(all_trips_v2$ride_length))
 is.numeric(all_trips_v2$ride_length)
 ```
+
+### Remove bad data
 
 There are no invaluable NaN rows to be removed
 
@@ -336,6 +450,8 @@ colSums(is.na(all_trips_v2))
     ##                  0                  0                  0                  0 
     ## start_station_name   start_station_id   end_station_name     end_station_id 
     ##             600479             600586             646471             646548 
+    ##          start_lat          start_lng            end_lat            end_lng 
+    ##                  0                  0               4831               4831 
     ##      member_casual               date              month                day 
     ##                  0                  0                  0                  0 
     ##               year        day_of_week               hour        ride_length 
@@ -353,7 +469,7 @@ Fix ride length
 distinct(all_trips_v2) # no duplicates
 ```
 
-    ## # A tibble: 5,378,834 × 16
+    ## # A tibble: 5,378,834 × 20
     ##    ride_id          rideable_type started_at          ended_at           
     ##    <chr>            <chr>         <dttm>              <dttm>             
     ##  1 BD0A6FF6FFF9B921 electric_bike 2020-11-01 13:36:00 2020-11-01 13:45:40
@@ -366,8 +482,9 @@ distinct(all_trips_v2) # no duplicates
     ##  8 9E7A79ADA90C2695 electric_bike 2020-11-14 16:04:15 2020-11-14 16:19:33
     ##  9 A5B02C0D41DBCDAF electric_bike 2020-11-14 16:24:09 2020-11-14 16:51:34
     ## 10 8234407C29FE41DC electric_bike 2020-11-14 01:24:22 2020-11-14 01:31:42
-    ## # … with 5,378,824 more rows, and 12 more variables: start_station_name <chr>,
+    ## # … with 5,378,824 more rows, and 16 more variables: start_station_name <chr>,
     ## #   start_station_id <chr>, end_station_name <chr>, end_station_id <chr>,
+    ## #   start_lat <dbl>, start_lng <dbl>, end_lat <dbl>, end_lng <dbl>,
     ## #   member_casual <chr>, date <date>, month <chr>, day <chr>, year <chr>,
     ## #   day_of_week <ord>, hour <chr>, ride_length <dbl>
 
@@ -397,6 +514,8 @@ colSums(is.na(all_trips_v3))
     ##                  0                  0                  0                  0 
     ## start_station_name   start_station_id   end_station_name     end_station_id 
     ##             581709             581808             621545             621614 
+    ##          start_lat          start_lng            end_lat            end_lng 
+    ##                  0                  0               2306               2306 
     ##      member_casual               date              month                day 
     ##                  0                  0                  0                  0 
     ##               year        day_of_week               hour        ride_length 
@@ -410,6 +529,8 @@ colSums(is.na(all_trips_v4))
     ##            ride_id      rideable_type         started_at           ended_at 
     ##                  0                  0                  0                  0 
     ## start_station_name   start_station_id   end_station_name     end_station_id 
+    ##                  0                  0                  0                  0 
+    ##          start_lat          start_lng            end_lat            end_lng 
     ##                  0                  0                  0                  0 
     ##      member_casual               date              month                day 
     ##                  0                  0                  0                  0 
@@ -425,7 +546,7 @@ Column renaming for easy life
                   user_type = member_casual))
 ```
 
-    ## # A tibble: 4,432,377 × 16
+    ## # A tibble: 4,432,377 × 20
     ##    ride_id          rideable_type started_at          ended_at           
     ##    <chr>            <chr>         <dttm>              <dttm>             
     ##  1 BD0A6FF6FFF9B921 electric_bike 2020-11-01 13:36:00 2020-11-01 13:45:40
@@ -438,8 +559,9 @@ Column renaming for easy life
     ##  8 A5B02C0D41DBCDAF electric_bike 2020-11-14 16:24:09 2020-11-14 16:51:34
     ##  9 8234407C29FE41DC electric_bike 2020-11-14 01:24:22 2020-11-14 01:31:42
     ## 10 3D2F9317211E3350 electric_bike 2020-11-14 12:05:08 2020-11-14 12:09:38
-    ## # … with 4,432,367 more rows, and 12 more variables: start_station_name <chr>,
+    ## # … with 4,432,367 more rows, and 16 more variables: start_station_name <chr>,
     ## #   start_station_id <chr>, end_station_name <chr>, end_station_id <chr>,
+    ## #   start_lat <dbl>, start_lng <dbl>, end_lat <dbl>, end_lng <dbl>,
     ## #   user_type <chr>, date <date>, month <chr>, day <chr>, year <chr>,
     ## #   day_of_week <ord>, hour <chr>, ride_length <dbl>
 
@@ -479,14 +601,22 @@ summary(all_trips_v4)
     ##  3rd Qu.:2021-08-30 18:45:19                                        
     ##  Max.   :2021-11-01 10:58:41                                        
     ##                                                                     
-    ##  end_station_name   end_station_id      user_type              date           
-    ##  Length:4432377     Length:4432377     Length:4432377     Min.   :2020-11-01  
-    ##  Class :character   Class :character   Class :character   1st Qu.:2021-05-14  
-    ##  Mode  :character   Mode  :character   Mode  :character   Median :2021-07-10  
-    ##                                                           Mean   :2021-06-24  
-    ##                                                           3rd Qu.:2021-08-30  
-    ##                                                           Max.   :2021-10-31  
-    ##                                                                               
+    ##  end_station_name   end_station_id       start_lat       start_lng     
+    ##  Length:4432377     Length:4432377     Min.   :41.65   Min.   :-87.83  
+    ##  Class :character   Class :character   1st Qu.:41.88   1st Qu.:-87.66  
+    ##  Mode  :character   Mode  :character   Median :41.90   Median :-87.64  
+    ##                                        Mean   :41.90   Mean   :-87.64  
+    ##                                        3rd Qu.:41.93   3rd Qu.:-87.63  
+    ##                                        Max.   :42.06   Max.   :-87.53  
+    ##                                                                        
+    ##     end_lat         end_lng        user_type              date           
+    ##  Min.   :41.65   Min.   :-87.83   Length:4432377     Min.   :2020-11-01  
+    ##  1st Qu.:41.88   1st Qu.:-87.66   Class :character   1st Qu.:2021-05-14  
+    ##  Median :41.90   Median :-87.64   Mode  :character   Median :2021-07-10  
+    ##  Mean   :41.90   Mean   :-87.64                      Mean   :2021-06-24  
+    ##  3rd Qu.:41.93   3rd Qu.:-87.63                      3rd Qu.:2021-08-30  
+    ##  Max.   :42.17   Max.   :-87.52                      Max.   :2021-10-31  
+    ##                                                                          
     ##     month               day                year              day_of_week    
     ##  Length:4432377     Length:4432377     Length:4432377     Sunday   :704410  
     ##  Class :character   Class :character   Class :character   Monday   :552074  
@@ -524,7 +654,7 @@ avg_user_ride_time <- ggplot(ride_length_stats, mapping = aes(x = user_type, y =
   geom_col(show.legend = FALSE) +
   labs(title = "User Ride Time",
        subtitle = 'Average time in minutes',
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x = "User",
        y = "Time")
 
@@ -532,7 +662,7 @@ median_user_ride_time <- ggplot(ride_length_stats, mapping = aes(x = user_type, 
   geom_col(show.legend = FALSE) +
   labs(title = "User Ride Time",
        subtitle = 'Median time in minutes',
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x = "User",
        y = "Time")
 
@@ -562,7 +692,7 @@ ggplot(weekdays_rides, aes(x = weekday, y = number_of_rides, fill = user_type)) 
   geom_col(show.legend = FALSE, position = "dodge") +
   facet_wrap(~user_type) +
   labs(title="Number of rides by rider type",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Weekdays",
        y="Number of Rides") +
   scale_y_continuous(labels = comma)
@@ -577,7 +707,7 @@ ggplot(weekdays_rides, aes(x = weekday, y = average_duration / 60, fill = user_t
   facet_wrap(~user_type) +
   geom_col(show.legend = FALSE, position = "dodge") +
   labs(title="Average duration",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Weekdays",
        y="Number of Rides")
 ```
@@ -640,7 +770,7 @@ ggplot(daytime_hours, aes(x = hour, y = number_of_rides, fill = user_type)) +
   facet_wrap(~user_type) +
   geom_col(show.legend = FALSE, position = "dodge") +
   labs(title="Daytime hour preference",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Hour",
        y="Number of Rides") +
   coord_flip() +
@@ -656,7 +786,7 @@ ggplot(daytime_hours, aes(x = hour, y = average_duration / 60, fill = user_type)
   facet_wrap(~user_type) +
   geom_col(show.legend = FALSE, position = "dodge") +
   labs(title="Daytime hour preference",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Hour",
        y="Average Duration") +
   coord_flip() +
@@ -667,7 +797,7 @@ ggplot(daytime_hours, aes(x = hour, y = average_duration / 60, fill = user_type)
 
     Observation 6: Casual trips are mush shorter in the mornings (5am-8am), with two peaks right before dawn and in the afternoon, while members ride regularly over all the 24-hour period.
 
-### Bike Preference
+### Bike preference
 
 ``` r
 bike_type <- all_trips_v4 %>%
@@ -682,7 +812,7 @@ ggplot(bike_type, aes(x = rideable_type, y = number_of_rides, fill = user_type))
   facet_wrap(~user_type) +
   geom_col(show.legend = FALSE, position = "dodge") +
   labs(title="Bike type preference",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Bike type",
        y="Number of Rides") +
   scale_y_continuous(labels = comma)
@@ -697,7 +827,7 @@ ggplot(bike_type, aes(x = rideable_type, y = average_duration / 60, fill = user_
   facet_wrap(~user_type) +
   geom_col(show.legend = FALSE, position = "dodge") +
   labs(title="Bike type preference",
-       caption=paste0("Data from: ", mindate, " to ", maxdate),
+       caption=paste0("Data by Motivate International Inc"),
        x="Bike type",
        y="Average Duration")
 ```
@@ -739,6 +869,7 @@ ggplot(popular_end_stations[1:10,], aes(x = end_station_name, y = number_of_ride
        x="Stations",
        y="Number of Rides") +
   scale_y_continuous(labels = comma) +
+  theme_minimal() +
   theme(axis.text.x = element_text(angle = 50,hjust = 1))
 ```
 
@@ -756,6 +887,7 @@ ggplot(top_popular_station[1:20,], aes(x = start_station_name, y = number_of_rid
        caption = "Data Source by Motivate Internatiol INC.",
        x="Stations",
        y="Number of Rides") +
+  theme_minimal() +
   scale_y_continuous(labels = comma) +
   theme(axis.text.x = element_text(angle = 50,hjust = 1))
 ```
@@ -777,6 +909,187 @@ ggplot(top_popular_station[1:20,], aes(x = start_station_name, y = number_of_rid
     2. Wells St & Concord Ln
 
     3. Kingsbury St & Kinzie St
+
+### Popular Routes
+
+``` r
+# Table with route counter for finding the top routs
+coordinates_table <- all_trips_v4 %>%
+  filter(start_lng != end_lng & start_lat != end_lat) %>%
+  group_by(start_lng, start_lat, end_lng, end_lat, user_type, rideable_type, hour) %>%
+  summarise(total = n(), .groups="drop")
+```
+
+Finding the top ride values for map filtering
+
+``` r
+quantile(coordinates_table$total, probs = c(.5, .75, .9, .95, .99, .995, .999,1))
+```
+
+    ##   50%   75%   90%   95%   99% 99.5% 99.9%  100% 
+    ##     1     2     4     6    15    21    44   363
+
+#### Showing the top 5% popular routes
+
+    ## Source : http://tile.stamen.com/toner/12/1050/1520.png
+
+    ## Source : http://tile.stamen.com/toner/12/1051/1520.png
+
+    ## Source : http://tile.stamen.com/toner/12/1050/1521.png
+
+    ## Source : http://tile.stamen.com/toner/12/1051/1521.png
+
+    ## Source : http://tile.stamen.com/toner/12/1050/1522.png
+
+    ## Source : http://tile.stamen.com/toner/12/1051/1522.png
+
+    ## Source : http://tile.stamen.com/toner/12/1050/1523.png
+
+    ## Source : http://tile.stamen.com/toner/12/1051/1523.png
+
+Map plots
+
+``` r
+# Casual users map
+ggmap(chicago_map, darken = c(0.8, "white")) +
+   geom_curve(casual_v1, 
+              mapping = aes(x = start_lng, 
+                            y = start_lat, 
+                            xend = end_lng, 
+                            yend = end_lat, 
+                            alpha = total, 
+                            color = hour), 
+              size = 0.5,
+              curvature = .2,
+              arrow = arrow(length=unit(0.2,"cm"), 
+                            ends="first", 
+                            type = "closed")) +
+    coord_cartesian() +
+    labs(title = "Top 5% Popular Routes By Casual Users",
+         x=NULL,
+         y=NULL, 
+         alpha = "Frequency",
+         color = "Ride Hour", 
+         caption = "Data by Motivate International Inc")
+```
+
+    ## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
+
+    ## Warning: Removed 1398 rows containing missing values (geom_curve).
+
+![](capstone-notebook_files/figure-gfm/plotting%20maps%20of%205%20percent-1.png)<!-- -->
+
+``` r
+# Members users map
+ggmap(chicago_map, darken = c(0.8, "white")) +
+    geom_curve(member_v1, 
+               mapping = aes(x = start_lng, 
+                             y = start_lat, 
+                             xend = end_lng, 
+                             yend = end_lat, 
+                             alpha= total, 
+                             color=hour), 
+               size = 0.5, 
+               curvature = .2,
+               arrow = arrow(length=unit(0.2,"cm"), 
+                             ends="first", 
+                             type = "closed")) +  
+    coord_cartesian() +
+    labs(title = "Top 5% Popular Routes By Annual Members",
+         x=NULL,
+         y=NULL,
+         alpha = "Frequency",
+         color = "Ride Hour",
+         caption = "Data by Motivate International Inc")
+```
+
+    ## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
+
+    ## Warning: Removed 3031 rows containing missing values (geom_curve).
+
+![](capstone-notebook_files/figure-gfm/plotting%20maps%20of%205%20percent-2.png)<!-- -->
+This maps are too populate with arrows, so I took the top 0.1%
+
+#### Showing the top 0.1%
+
+``` r
+coordinates_table_v2 <- all_trips_v4 %>%
+  filter(start_lng != end_lng & start_lat != end_lat) %>%
+  group_by(start_lng, start_lat, end_lng, end_lat, user_type, rideable_type, hour) %>%
+  summarise(total = n(), .groups="drop") %>%
+  filter(total >= 44)
+
+casual_v2 <- coordinates_table_v2 %>%
+  filter(user_type == "casual")
+member_v2 <- coordinates_table_v2 %>% 
+  filter(user_type == "member")
+```
+
+Map plots
+
+``` r
+# Casual users map
+ggmap(chicago_map, darken = c(0.8, "white")) +
+   geom_curve(casual_v2, 
+              mapping = aes(x = start_lng, 
+                            y = start_lat, 
+                            xend = end_lng, 
+                            yend = end_lat, 
+                            alpha = total, 
+                            color = hour), 
+              size = 0.5,
+              curvature = .2,
+              arrow = arrow(length=unit(0.2,"cm"), 
+                            ends="first", 
+                            type = "closed")) +
+    coord_cartesian() +
+    labs(title = "Top 0.1% Popular Routes By Casual Users",
+         x = NULL,
+         y = NULL, 
+         alpha = "Frequency",
+         color = "Ride Hour", 
+         caption = "Data by Motivate International Inc")
+```
+
+    ## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
+
+    ## Warning: Removed 15 rows containing missing values (geom_curve).
+
+![](capstone-notebook_files/figure-gfm/plotting%20maps%20of%200.1%20percent-1.png)<!-- -->
+
+``` r
+# Members users map
+ggmap(chicago_map, darken = c(0.8, "white")) +
+    geom_curve(member_v2, 
+               mapping = aes(x = start_lng, 
+                             y = start_lat, 
+                             xend = end_lng, 
+                             yend = end_lat, 
+                             alpha = total, 
+                             color = hour), 
+               size = 0.5, 
+               curvature = .2,
+               arrow = arrow(length=unit(0.2,"cm"), 
+                             ends="first", 
+                             type = "closed")) +  
+    coord_cartesian() +
+    labs(title = "Top 0.1% Popular Routes By Annual Members",
+         x=NULL,
+         y=NULL,
+         alpha = "Frequency",
+         color = "Ride Hour",
+         caption = "Data by Motivate International Inc")
+```
+
+    ## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
+
+    ## Warning: Removed 153 rows containing missing values (geom_curve).
+
+![](capstone-notebook_files/figure-gfm/plotting%20maps%20of%200.1%20percent-2.png)<!-- -->
+
+> Observation 10: Casual users tend to center arround Chicago harbor
+> stations, while annual members center in “The Loop” and arroud the
+> “University of Illinois of Chicago”.
 
 ------------------------------------------------------------------------
 
@@ -843,13 +1156,15 @@ use Cyclistic bikes differently?**, and my *key observations*:
 
     3. Kingsbury St & Kinzie St
 
+    Observation 10: Casual users tend to center arround Chicago harbor stations, while annual members center in "The Loop" and arroud the "University of Illinois of Chicago".
+
 ### My top 3 recommendations:
 
-1.  Campaign on discount membership for longer rides during the weekends
-    (Observations 1, 2 and 3).
+1.  Marketing campaign on discount membership for longer rides during
+    the weekends (Observations 1, 2 and 3).
 
-2.  Add more bikes and promotions at the casual users top stations
-    (Observation 9).
+2.  Add more bikes and promotions at the casual users top stations and
+    districts (Observation 9, 10).
 
 3.  Afternoon and summer months special offers for member users, to draw
     the casual users to join in (Observations 4, 5, 6).
